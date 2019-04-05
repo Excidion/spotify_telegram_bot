@@ -96,7 +96,7 @@ class TelegramBot():
 
     def search_for_track(self, bot, update, user_data):
         results = self.spotify.search_track(update.message.text)
-        options = [["Search something else."], ["Stop searching."]]
+        options = [["Try another search.", "Stop searching."]]
         options += [[x] for x in results.keys()]
         bot.send_message(
             chat_id = update.message.chat_id,
@@ -108,7 +108,7 @@ class TelegramBot():
 
     def add_track(self, bot, update, user_data):
         response = update.message.text
-        if response == "Search something else.":
+        if response == "Try another search.":
             update.message.reply_text("Okay, what is it?", reply_markup=ReplyKeyboardRemove())
             return 0
         elif response == "Stop searching.":
