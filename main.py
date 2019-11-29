@@ -16,8 +16,5 @@ bot.start_bot()
 try:
     while True:
         pass
-except Exception as e:
-    print(e)
-
 except KeyboardInterrupt:
     bot.stop_bot()

@@ -9,31 +9,55 @@ config.read("config.ini")
 
 class AdminFilter(BaseFilter):
     def filter(self, message):
-        user = message.from_user
-        print(f"{user.first_name} {user.last_name} ({user.username}): {message.text}")
-        return user.username == config.get("TELEGRAM", "DEFAULT_CONTACT")
+        return message.from_user.username == config.get("TELEGRAM", "DEFAULT_CONTACT")
 
+class GeneralFilter(BaseFilter):
+    def filter(self, message):
+        user = message.from_user
+        print(f"{user.first_name or ''} {user.last_name or ''} ({user.username or ''}): {message.text}")
+        return True
 
 
 class TelegramBot():
     def __init__(self, spotify_remote):
-        self.updater = Updater(token = config.get("TELEGRAM", "BOT_TOKEN"))
-        self.dispatcher = self.updater.dispatcher
-
+        self.updater = Updater(
+            token = config.get("TELEGRAM", "BOT_TOKEN"),
+            use_context = True,
+        )
+        dispatcher = self.updater.dispatcher
         self.spotify = spotify_remote
-
         self.setup_admin_id()
-        self.setup_admin_commands()
 
-        self.dispatcher.add_handler(ConversationHandler(
-            entry_points = [CommandHandler("song", self.start_song_search)],
-            states = {0: [MessageHandler(Filters.text,
-                                         self.search_for_track,
-                                         pass_user_data=True)],
-                      1: [MessageHandler(Filters.text,
-                                         self.add_track,
-                                         pass_user_data=True)]},
-            fallbacks = [CommandHandler("cancel", self.cancel)]
+        dispatcher.add_handler(
+            CommandHandler(
+                "start",
+                self.greet,
+                filters = GeneralFilter(),
+            )
+        )
+
+        ADMIN_COMMAND_MAP = {
+            "chat_id": self.print_chat_id,
+            "register": self.register,
+        }
+        for command in ADMIN_COMMAND_MAP:
+            dispatcher.add_handler(
+                CommandHandler(
+                    command,
+                    ADMIN_COMMAND_MAP[command],
+                    filters = AdminFilter() & GeneralFilter()
+                )
+            )
+
+        dispatcher.add_handler(ConversationHandler(
+            entry_points = [CommandHandler("song", self.start_song_search,filters = GeneralFilter())],
+            states = {
+                0: [MessageHandler(Filters.text & GeneralFilter(), self.show_search_results)],
+                1: [MessageHandler(Filters.text & GeneralFilter(), self.react_to_selection)],
+                2: [MessageHandler(Filters.text & GeneralFilter(), self.react_to_choice)],
+            },
+            fallbacks = [CommandHandler("cancel", self.cancel)],
+            allow_reentry = True,
         ))
 
 
@@ -45,21 +69,11 @@ class TelegramBot():
         except FileNotFoundError:
             self.DEFAULT_CONTACT_ID = None
 
-    def setup_admin_commands(self):
-        ADMIN_COMMAND_MAP = {"chat_id": self.print_chat_id,
-                             "register": self.register}
-        for command in ADMIN_COMMAND_MAP:
-            self.dispatcher.add_handler(CommandHandler(
-                command,
-                ADMIN_COMMAND_MAP[command],
-                filters = AdminFilter()
-            ))
-
 
     # methods to use from outside
     def start_bot(self):
         self.updater.start_polling() # start mainloop
-        print("Startup successfull. Telegram-Bot is now online.")
+        self.message_me("Startup successfull. Telegram-Bot is now online.")
 
     def stop_bot(self):
         print("Shutdown initiated.")
@@ -76,11 +90,14 @@ class TelegramBot():
 
 
     # commands
-    def print_chat_id(self, bot, update):
+    def greet(self, update, context):
+        update.message.reply_markdown("# Hello!\n## And welcome to the party!\n+Use /song if you have a wish.")
+
+    def print_chat_id(self, update, context):
         chat_id = update.message.chat_id
         bot.send_message(chat_id = chat_id, text = chat_id)
 
-    def register(self, bot, update):
+    def register(self, update, context):
         id = update.message.chat_id
         with open(config["TELEGRAM"]["SAVEPOINT"]+".p", "wb") as file:
             pickle.dump(id,file)
@@ -89,38 +106,75 @@ class TelegramBot():
 
 
     # advanced commands
-    def start_song_search(self, bot, update):
-        bot.send_message(chat_id=update.message.chat_id,
-                         text="What do you want to listen to?")
+    def start_song_search(self, update, context):
+        update.message.reply_text("What do you want to listen to?")
         return 0
 
-    def search_for_track(self, bot, update, user_data):
-        results = self.spotify.search_track(update.message.text)
+    def show_search_results(self, update, context):
+        user_data = context.user_data
+        if not "song_search_results" in user_data:
+            user_data["song_search_results"] = self.spotify.search_track(update.message.text)
         options = [["Try another search.", "Stop searching."]]
-        options += [[x] for x in results.keys()]
-        bot.send_message(
-            chat_id = update.message.chat_id,
-            text = "These are the songs i found. Select the right one or try another search.",
-            reply_markup = ReplyKeyboardMarkup(options, one_time_keyboard=True)
+        options += [[x] for x in user_data["song_search_results"].keys()]
+        update.message.reply_text(
+            text = "These are the songs I found. Can you see the right one?",
+            reply_markup = ReplyKeyboardMarkup(options, one_time_keyboard=True),
         )
-        user_data["results"] = results
         return 1
 
-    def add_track(self, bot, update, user_data):
+    def react_to_selection(self, update, context):
         response = update.message.text
         if response == "Try another search.":
-            update.message.reply_text("Okay, what is it?", reply_markup=ReplyKeyboardRemove())
+            update.message.reply_text(
+                "Okay, how is it called?",
+                reply_markup = ReplyKeyboardRemove(),
+            )
+            del user_data["song_search_results"]
             return 0
         elif response == "Stop searching.":
-            update.message.reply_text("Sorry that i couldn't help you!", reply_markup=ReplyKeyboardRemove())
+            update.message.reply_text(
+                "Sorry that i couldn't help you.",
+                reply_markup = ReplyKeyboardRemove(),
+            )
+            del user_data["song_search_results"]
+            return ConversationHandler.END
+        elif response in context.user_data["song_search_results"]:
+            id = context.user_data["song_search_results"][response]
+            update.message.reply_text("Does this sound right?")
+            update.message.reply_audio(
+                self.spotify.get_track_preview(id),
+                reply_markup = ReplyKeyboardMarkup(
+                    [["Yes, that's the song!"], ["No, show me the other ones again."]],
+                    one_time_keyboard = True,
+                )
+            )
+            return 2
+        else:
             return ConversationHandler.END
 
 
-        id = user_data["results"][response]
-        update.message.reply_text("OK", reply_markup=ReplyKeyboardRemove())
-        return ConversationHandler.END
+    def react_to_choice(self, update, context):
+        response = update.message.text
+        if response == "Yes, that's the song!":
+            update.message.reply_text(
+                "I'll add it to the queue!",
+                reply_markup = ReplyKeyboardRemove(),
+            )
+            del context.user_data["song_search_results"]
+            return ConversationHandler.END
+        elif response == "No, show me the other ones.":
+            options = [["Try another search.", "Stop searching."]]
+            options += [[x] for x in context.user_data["song_search_results"].keys()]
+            update.message.reply_text(
+                text = "Here is the list again. Can you see the right one now?",
+                reply_markup = ReplyKeyboardMarkup(options, one_time_keyboard=True),
+            )
+            return 1
 
-    def cancel(self, bot, update):
-        update.message.reply_text("Action canceled.")
-        update.message.reply_text("", reply_markup=ReplyKeyboardRemove())
+
+    def cancel(self, update, context):
+        update.message.reply_text(
+            "Action canceled.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
         return ConversationHandler.END
