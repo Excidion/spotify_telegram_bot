@@ -6,15 +6,18 @@ config = ConfigParser()
 config.read("config.ini")
 
 spotify_remote = SpotifyRemote(
-    config.get("SPOTIFY", "CLIENT_ID"),
-    config.get("SPOTIFY", "CLIENT_SECRET")
+    config.get("SPOTIFY", "client_id"),
+    config.get("SPOTIFY", "client_secret"),
+    config.get("SPOTIFY", "username")
 )
 
-bot = TelegramBot(spotify_remote)
+bot = TelegramBot(
+    config.get("TELEGRAM", "token"),
+    spotify_remote,
+)
 bot.start_bot()
-
 try:
     while True:
         pass
-except KeyboardInterrupt:
-    bot.stop_bot()
+except KeyboardInterrupt: pass
+bot.stop_bot()

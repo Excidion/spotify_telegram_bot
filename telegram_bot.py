@@ -9,7 +9,7 @@ config.read("config.ini")
 
 class AdminFilter(BaseFilter):
     def filter(self, message):
-        return message.from_user.username == config.get("TELEGRAM", "DEFAULT_CONTACT")
+        return message.from_user.username == config.get("TELEGRAM", "ADMIN")
 
 class GeneralFilter(BaseFilter):
     def filter(self, message):
@@ -19,22 +19,27 @@ class GeneralFilter(BaseFilter):
 
 
 class TelegramBot():
-    def __init__(self, spotify_remote):
+    def __init__(self, token, spotify_remote):
         self.updater = Updater(
-            token = config.get("TELEGRAM", "BOT_TOKEN"),
+            token = token,
             use_context = True,
         )
         dispatcher = self.updater.dispatcher
         self.spotify = spotify_remote
         self.setup_admin_id()
 
-        dispatcher.add_handler(
-            CommandHandler(
-                "start",
-                self.greet,
-                filters = GeneralFilter(),
+        COMMAND_MAP = {
+            "start": self.greet,
+            "now": self.print_now_playing
+        }
+        for command in COMMAND_MAP:
+            dispatcher.add_handler(
+                CommandHandler(
+                    command,
+                    COMMAND_MAP[command],
+                    filters = GeneralFilter(),
+                )
             )
-        )
 
         ADMIN_COMMAND_MAP = {
             "chat_id": self.print_chat_id,
@@ -45,7 +50,7 @@ class TelegramBot():
                 CommandHandler(
                     command,
                     ADMIN_COMMAND_MAP[command],
-                    filters = AdminFilter() & GeneralFilter()
+                    filters = AdminFilter() & GeneralFilter(),
                 )
             )
 
@@ -64,7 +69,7 @@ class TelegramBot():
     # setup methods
     def setup_admin_id(self):
         try:
-            with open(config["TELEGRAM"]["SAVEPOINT"]+".p", "rb") as file:
+            with open(".admin.p", "rb") as file:
                 self.DEFAULT_CONTACT_ID = pickle.load(file)
         except FileNotFoundError:
             self.DEFAULT_CONTACT_ID = None
@@ -73,14 +78,22 @@ class TelegramBot():
     # methods to use from outside
     def start_bot(self):
         self.updater.start_polling() # start mainloop
-        self.message_me("Startup successfull. Telegram-Bot is now online.")
+        self.message_me("Startup successfull. Spotify-Bot is now online.")
 
     def stop_bot(self):
-        print("Shutdown initiated.")
+        print("\nShutdown initiated.")
         self.updater.stop()
 
-    def send_message(self, text, id):
-        self.updater.bot.send_message(chat_id=id, text=text)
+
+    def update_me(self, update, context):
+        if update.message.chat_id == self.DEFAULT_CONTACT_ID:
+            return # don't inform me about my own actions
+        user = update.message.from_user
+        msg = ""
+        msg += f"{user.first_name or ''} {user.last_name or ''}"
+        msg += f" ({user.username or ''})"
+        msg += f"has added \"{update.message.text}\" to the playlist."
+        self.message_me(msg)
 
     def message_me(self, text):
         if not self.DEFAULT_CONTACT_ID == None:
@@ -88,19 +101,26 @@ class TelegramBot():
         else:
             print("Please /register your Telegram Account to use this function.")
 
+    def send_message(self, text, id):
+        self.updater.bot.send_message(chat_id=id, text=text)
+
 
     # commands
     def greet(self, update, context):
-        update.message.reply_markdown("# Hello!\n## And welcome to the party!\n+Use /song if you have a wish.")
+        update.message.reply_text("Hello, and welcome to the party!\nUse /song if you have a wish.")
 
+    def print_now_playing(self, update, context):
+        update.message.reply_text(self.spotify.now_playing())
+
+
+    # admin commands
     def print_chat_id(self, update, context):
-        chat_id = update.message.chat_id
-        bot.send_message(chat_id = chat_id, text = chat_id)
+        update.message.reply_text(update.message.chat_id)
 
     def register(self, update, context):
         id = update.message.chat_id
-        with open(config["TELEGRAM"]["SAVEPOINT"]+".p", "wb") as file:
-            pickle.dump(id,file)
+        with open(".admin.p", "wb") as file:
+            pickle.dump(id, file)
         self.DEFAULT_CONTACT_ID = id
         self.message_me("Registration successfull.")
 
@@ -160,6 +180,7 @@ class TelegramBot():
                 "I'll add it to the queue!",
                 reply_markup = ReplyKeyboardRemove(),
             )
+            self.update_me(update, context)
             del context.user_data["song_search_results"]
             return ConversationHandler.END
         elif response == "No, show me the other ones.":
