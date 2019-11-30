@@ -19,4 +19,7 @@ Before being able to use this bot, some setup work is required.
 
 ### On the first start
 You can now start up the bot via `python main.py` from the code directory.
-On your first run, contact the bot from the Telegram account you set as `ADMIN` and send him the `/register` command. This way, he can save your *chat_id* to contact you with live updates.
+There are still two tasks to do after this, that will not be required again, unless you re-install the bot.
++ On startup he bot will open a link inside your web browser and ask for user input in the terminal. Just copy the link into the terminal and press enter.
+
++ Contact the bot from the Telegram account you set as `ADMIN` and send him the `/register` command. This way, he can save your *chat_id* to contact you with live updates.
