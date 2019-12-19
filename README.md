@@ -5,8 +5,6 @@ Before being able to use this bot, some setup work is required.
 ### Perequisites
 + [Telegram](https://telegram.org/) account.
 + [Spotify developer](https://developer.spotify.com/) account.
-+ Working Python 3 installation.
-+ Cloned version of this repository on your drive.
 
 ### Configuration
 + Create a new application at the [spotify developer dashboard](https://developer.spotify.com/dashboard/applications) and go to it's overview page.
@@ -16,6 +14,7 @@ Before being able to use this bot, some setup work is required.
     + Follow his instructions until everything is ready to go.
     + Once the bot is created he will send you an access **token**. Copy this token into the [`config.ini`](config.ini).
 + In the section `TELEGRAM` in the [`config.ini`](config.ini) enter your Telegram username as the `ADMIN`. Your Telegram username will look like this: `@username`. Leave out the `@` at the beginning.
++ In the section `TELEGRAM` in the [`config.ini`](config.ini) enter a `password`. Tell this to your guests, so they can use the bot.
 
 ### On the first start
 You can now start up the bot via `python main.py` from the code directory.
