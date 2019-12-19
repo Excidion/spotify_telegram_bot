@@ -40,6 +40,13 @@ class SpotifyRemote():
         return self.spotify.track(id)["preview_url"]
 
 
+    def now_playing(self):
+        return "nothing" # TODO
+
+    def add_to_queue(self, id):
+        pass # TODO
+
+
 
 if __name__ == '__main__':
     from configparser import ConfigParser

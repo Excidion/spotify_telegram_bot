@@ -4,18 +4,29 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 import pickle
 from spotify_remote import SpotifyRemote
 
+
 config = ConfigParser()
 config.read("config.ini")
 
-class AdminFilter(BaseFilter):
-    def filter(self, message):
-        return message.from_user.username == config.get("TELEGRAM", "ADMIN")
 
-class GeneralFilter(BaseFilter):
+class AdminFilter(BaseFilter):
+    admin_username = config.get("TELEGRAM", "ADMIN")
+
     def filter(self, message):
-        user = message.from_user
-        print(f"{user.first_name or ''} {user.last_name or ''} ({user.username or ''}): {message.text}")
-        return True
+        return message.from_user.username == self.admin_username
+
+
+class UserFilter(BaseFilter):
+    password = config.get("TELEGRAM", "password")
+    user_chat_ids = []
+
+    def filter(self, message):
+        if not message.chat_id in self.user_chat_ids:
+            message.reply_text("First use /password and tell me the magic word.")
+        return message.chat_id in self.user_chat_ids
+
+    def add_user(self, id):
+        UserFilter.user_chat_ids.append(id)
 
 
 class TelegramBot():
@@ -24,20 +35,20 @@ class TelegramBot():
             token = token,
             use_context = True,
         )
+        self.user_filter = UserFilter()
         dispatcher = self.updater.dispatcher
         self.spotify = spotify_remote
         self.setup_admin_id()
 
         COMMAND_MAP = {
             "start": self.greet,
-            "now": self.print_now_playing
+            "now": self.print_now_playing,
         }
         for command in COMMAND_MAP:
             dispatcher.add_handler(
                 CommandHandler(
                     command,
                     COMMAND_MAP[command],
-                    filters = GeneralFilter(),
                 )
             )
 
@@ -50,16 +61,36 @@ class TelegramBot():
                 CommandHandler(
                     command,
                     ADMIN_COMMAND_MAP[command],
-                    filters = AdminFilter() & GeneralFilter(),
+                    filters = AdminFilter(),
                 )
             )
 
         dispatcher.add_handler(ConversationHandler(
-            entry_points = [CommandHandler("song", self.start_song_search,filters = GeneralFilter())],
+            entry_points = [
+                CommandHandler(
+                    "song",
+                    self.start_song_search,
+                    filters = self.user_filter,
+                ),
+            ],
             states = {
-                0: [MessageHandler(Filters.text & GeneralFilter(), self.show_search_results)],
-                1: [MessageHandler(Filters.text & GeneralFilter(), self.react_to_selection)],
-                2: [MessageHandler(Filters.text & GeneralFilter(), self.react_to_choice)],
+                0: [MessageHandler(Filters.text, self.show_search_results)],
+                1: [MessageHandler(Filters.text, self.react_to_selection)],
+                2: [MessageHandler(Filters.text, self.react_to_choice)],
+            },
+            fallbacks = [CommandHandler("cancel", self.cancel)],
+            allow_reentry = True,
+        ))
+
+        dispatcher.add_handler(ConversationHandler(
+            entry_points = [
+                CommandHandler(
+                    "password",
+                    self.ask_for_password,
+                ),
+            ],
+            states = {
+                0: [MessageHandler(Filters.text, self.check_password)],
             },
             fallbacks = [CommandHandler("cancel", self.cancel)],
             allow_reentry = True,
@@ -78,22 +109,11 @@ class TelegramBot():
     # methods to use from outside
     def start_bot(self):
         self.updater.start_polling() # start mainloop
-        self.message_me("Startup successfull. Spotify-Bot is now online.")
+        print("Startup successfull. Spotify-Bot is now online.")
 
     def stop_bot(self):
         print("\nShutdown initiated.")
         self.updater.stop()
-
-
-    def update_me(self, update, context):
-        if update.message.chat_id == self.DEFAULT_CONTACT_ID:
-            return # don't inform me about my own actions
-        user = update.message.from_user
-        msg = ""
-        msg += f"{user.first_name or ''} {user.last_name or ''}"
-        msg += f" ({user.username or ''})"
-        msg += f"has added \"{update.message.text}\" to the playlist."
-        self.message_me(msg)
 
     def message_me(self, text):
         if not self.DEFAULT_CONTACT_ID == None:
@@ -107,7 +127,7 @@ class TelegramBot():
 
     # commands
     def greet(self, update, context):
-        update.message.reply_text("Hello, and welcome to the party!\nUse /song if you have a wish.")
+        update.message.reply_text("Hello! I'll be the DJ tonight.\nUse /password to verify you are really at the party.")
 
     def print_now_playing(self, update, context):
         update.message.reply_text(self.spotify.now_playing())
@@ -125,7 +145,7 @@ class TelegramBot():
         self.message_me("Registration successfull.")
 
 
-    # advanced commands
+    # song search
     def start_song_search(self, update, context):
         update.message.reply_text("What do you want to listen to?")
         return 0
@@ -160,6 +180,7 @@ class TelegramBot():
             return ConversationHandler.END
         elif response in context.user_data["song_search_results"]:
             id = context.user_data["song_search_results"][response]
+            context.user_data["selection_id"] = id
             update.message.reply_text("Does this sound right?")
             update.message.reply_audio(
                 self.spotify.get_track_preview(id),
@@ -180,10 +201,10 @@ class TelegramBot():
                 "I'll add it to the queue!",
                 reply_markup = ReplyKeyboardRemove(),
             )
-            self.update_me(update, context)
+            self.spotify.add_to_queue(context.user_data["selection_id"])
             del context.user_data["song_search_results"]
             return ConversationHandler.END
-        elif response == "No, show me the other ones.":
+        elif response == "No, show me the other ones again.":
             options = [["Try another search.", "Stop searching."]]
             options += [[x] for x in context.user_data["song_search_results"].keys()]
             update.message.reply_text(
@@ -193,6 +214,22 @@ class TelegramBot():
             return 1
 
 
+    # password check
+    def ask_for_password(self, update, context):
+        update.message.reply_text("What's the magic word?")
+        return 0
+
+    def check_password(self, update, context):
+        if update.message.text == self.user_filter.password:
+            self.user_filter.add_user(update.message.chat_id)
+            response = "Welcome to the party. Use /song of you have any wishes."
+        else:
+            response = "Nah, nah, nah. You didn't say the magic word."
+        update.message.reply_text(response)
+        return ConversationHandler.END
+
+
+    # general conversation commands
     def cancel(self, update, context):
         update.message.reply_text(
             "Action canceled.",
