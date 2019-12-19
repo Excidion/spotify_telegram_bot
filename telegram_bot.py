@@ -222,11 +222,12 @@ class TelegramBot():
     def check_password(self, update, context):
         if update.message.text == self.user_filter.password:
             self.user_filter.add_user(update.message.chat_id)
-            response = "Welcome to the party. Use /song of you have any wishes."
+            update.message.reply_text("Welcome to the party. Use /song of you have any wishes.")
+            return ConversationHandler.END
         else:
-            response = "Nah, nah, nah. You didn't say the magic word."
-        update.message.reply_text(response)
-        return ConversationHandler.END
+            update.message.reply_text("Nah, nah, nah. You didn't say the magic word.")
+            return 0
+
 
 
     # general conversation commands
