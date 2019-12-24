@@ -169,29 +169,37 @@ class TelegramBot():
                 "Okay, how is it called?",
                 reply_markup = ReplyKeyboardRemove(),
             )
-            del user_data["song_search_results"]
+            del context.user_data["song_search_results"]
             return 0
+
         elif response == "Stop searching.":
             update.message.reply_text(
                 "Sorry that i couldn't help you.",
                 reply_markup = ReplyKeyboardRemove(),
             )
-            del user_data["song_search_results"]
+            del context.user_data["song_search_results"]
             return ConversationHandler.END
+
         elif response in context.user_data["song_search_results"]:
             id = context.user_data["song_search_results"][response]
             context.user_data["selection_id"] = id
-            update.message.reply_text("Does this sound right?")
-            update.message.reply_audio(
-                self.spotify.get_track_preview(id),
-                reply_markup = ReplyKeyboardMarkup(
-                    [["Yes, that's the song!"], ["No, show me the other ones again."]],
-                    one_time_keyboard = True,
-                )
+            preview_url = self.spotify.get_track_preview(id)
+            reply_keyboard = ReplyKeyboardMarkup(
+                [["Yes, that's the song!"], ["No, show me the other ones again."]],
+                one_time_keyboard = True,
             )
+            if preview_url == None:
+                update.message.reply_text(
+                    "Are you sure you want to add the song to the Queue?",
+                    reply_markup = reply_keyboard,
+                )
+            else:
+                update.message.reply_text("Does this sound right?")
+                update.message.reply_audio(
+                    self.spotify.get_track_preview(id),
+                    reply_markup = reply_keyboard,
+                )
             return 2
-        else:
-            return ConversationHandler.END
 
 
     def react_to_choice(self, update, context):
@@ -222,7 +230,8 @@ class TelegramBot():
     def check_password(self, update, context):
         if update.message.text == self.user_filter.password:
             self.user_filter.add_user(update.message.chat_id)
-            update.message.reply_text("Welcome to the party. Use /song of you have any wishes.")
+            update.message.reply_text("Welcome to the party.")
+            update.message.reply_text("Use /song of you have any wishes.")
             return ConversationHandler.END
         else:
             update.message.reply_text("Nah, nah, nah. You didn't say the magic word.")
