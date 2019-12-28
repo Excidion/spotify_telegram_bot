@@ -10,7 +10,7 @@ Before being able to use this bot, some setup work is required.
 + Create a new application at the [spotify developer dashboard](https://developer.spotify.com/dashboard/applications) and go to it's overview page.
     + Get the **Client ID** and the **Client Secret** and copy them into the [`config.ini`](config.ini).
     + Go to **Edit Settings** and add `http://localhost:/callback` to the **Redirect URIs**. Click on **Save**.
-+ Contact the [@BotFather](t.me/BotFather) and create a new bot by texting him `/newbot`.
++ Contact the [@BotFather](https://t.me/BotFather) and create a new bot by texting him `/newbot`.
     + Follow his instructions until everything is ready to go.
     + Once the bot is created he will send you an access **token**. Copy this token into the [`config.ini`](config.ini).
 + In the section `TELEGRAM` in the [`config.ini`](config.ini) enter your Telegram username as the `ADMIN`. Your Telegram username will look like this: `@username`. Leave out the `@` at the beginning.
