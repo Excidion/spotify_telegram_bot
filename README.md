@@ -19,6 +19,8 @@ Before being able to use this bot, some setup work is required.
 ### On the first start
 You can now start up the bot via `python main.py` from the code directory.
 There are still two tasks to do after this, that will not be required again, unless you re-install the bot.
-+ On start-up the bot will open a link inside your web browser and ask for user input in the terminal. Just copy the link into the terminal and press enter.
++ On start-up the bot will open a web page in your browser and ask for access permissions to your Spotify account.
+Once you give the permission you will be forwarded to another link.
+Copy this link into the terminal and press enter.
 
 + Contact the bot from the Telegram account you set as `ADMIN` and send him the `/register` command. This way, he can save your *chat_id* to contact you with live updates.
