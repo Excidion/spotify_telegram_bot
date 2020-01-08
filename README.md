@@ -15,6 +15,7 @@ Before being able to use this bot, some setup work is required.
     + Once the bot is created he will send you an access **token**. Copy this token into the [`config.ini`](config.ini).
 + In the section `TELEGRAM` in the [`config.ini`](config.ini) enter your Telegram username as the `ADMIN`. Your Telegram username will look like this: `@username`. Leave out the `@` at the beginning.
 + In the section `TELEGRAM` in the [`config.ini`](config.ini) enter a `password`. Tell this to your guests, so they can use the bot.
++ In the section `SPOTIFY` in the [`config.ini`](config.ini) enter your spotify username and a link to a spotify playlist that the bot should play from in case the the queue is empty.
 
 ### On the first start
 You can now start up the bot via `python main.py` from the code directory.
