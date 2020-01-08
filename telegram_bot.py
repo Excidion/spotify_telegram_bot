@@ -224,7 +224,6 @@ class TelegramBot():
             else:
                 response = "Lucky you, it's already in the queue!"
             update.message.reply_text(response, reply_markup = ReplyKeyboardRemove())
-            self.spotify.add_to_queue(context.user_data["selection_id"])
             del context.user_data["song_search_results"]
             return ConversationHandler.END
         elif response == "No, show me the other ones again.":
