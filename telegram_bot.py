@@ -43,6 +43,7 @@ class TelegramBot():
         COMMAND_MAP = {
             "start": self.greet,
             "now": self.print_now_playing,
+            "next": self.print_next_song,
         }
         for command in COMMAND_MAP:
             dispatcher.add_handler(
@@ -55,6 +56,7 @@ class TelegramBot():
         ADMIN_COMMAND_MAP = {
             "chat_id": self.print_chat_id,
             "register": self.register,
+            "skip": self.skip_track,
         }
         for command in ADMIN_COMMAND_MAP:
             dispatcher.add_handler(
@@ -132,6 +134,13 @@ class TelegramBot():
     def print_now_playing(self, update, context):
         update.message.reply_text(self.spotify.now_playing())
 
+    def print_next_song(self, update, context):
+        next = self.spotify.next_song()
+        if not next is None:
+            update.message.reply_text(f"Next up is \"{next}\".")
+        else:
+            update.message.reply_text("The queue is empty. Why don't you suggest a /song ?")
+
 
     # admin commands
     def print_chat_id(self, update, context):
@@ -143,6 +152,11 @@ class TelegramBot():
             pickle.dump(id, file)
         self.DEFAULT_CONTACT_ID = id
         self.message_me("Registration successfull.")
+
+    def skip_track(self, update, context):
+        update.message.reply_text("I will skip this one.")
+        self.spotify.skip()
+        update.message.reply_text(f"Next one is \"{self.spotify.now_playing()}\".")
 
 
     # song search
@@ -205,10 +219,11 @@ class TelegramBot():
     def react_to_choice(self, update, context):
         response = update.message.text
         if response == "Yes, that's the song!":
-            update.message.reply_text(
-                "I'll add it to the queue!",
-                reply_markup = ReplyKeyboardRemove(),
-            )
+            if self.spotify.add_to_queue(context.user_data["selection_id"]):
+                response = "I'll add it to the queue!"
+            else:
+                response = "Lucky you, it's already in the queue!"
+            update.message.reply_text(response, reply_markup = ReplyKeyboardRemove())
             self.spotify.add_to_queue(context.user_data["selection_id"])
             del context.user_data["song_search_results"]
             return ConversationHandler.END
