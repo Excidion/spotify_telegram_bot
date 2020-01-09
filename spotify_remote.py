@@ -1,8 +1,8 @@
 import spotipy
 import spotipy.util as util
 import spotipy.auth as auth
-from multiprocessing.queues import Queue
-from multiprocessing import Process, get_context
+from queue import Queue
+from threading import Thread
 from time import sleep
 import random
 
@@ -78,14 +78,12 @@ class SpotifyRemote:
 
 
 class SpotifyQueue(Queue):
-    def __init__(self, spotify_client, fallback_playlist_id, maxsize=-1, block=True, timeout=None):
-        self.block = block
-        self.timeout = timeout
-        super().__init__(maxsize, ctx=get_context())
+    def __init__(self, spotify_client, fallback_playlist_id, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.spotify_client = spotify_client
         self.fallback_playlist = self.spotify_client.playlist(fallback_playlist_id)
-        self.playback_process = Process(target=self.control_playback, args=[])
-        self.playback_process.start()
+        self.playback_controller = Thread(target=self.control_playback, args=[])
+        self.playback_controller.start()
 
     def control_playback(self):
         self.play_next_track()
@@ -93,7 +91,7 @@ class SpotifyQueue(Queue):
         while not sleep(interval):
             playback = self.spotify_client.playback()
             if playback is None:
-                print("Playback stopped. Please resume.")
+                pass
             elif playback.item.duration_ms - playback.progress_ms <= interval*1000:
                 self.play_next_track()
 
@@ -104,12 +102,12 @@ class SpotifyQueue(Queue):
             id = random.choice([t.track.id for t in self.fallback_playlist.tracks.items])
         self.spotify_client.playback_start_tracks([id])
 
-    def put(self, item, block=True, timeout=None):
+    def put(self, item, *args, **kwargs):
         if not item in self.list():
-            super().put(item, block=block, timeout=timeout)
+            super().put(item, *args, **kwargs)
             return True
         else:
             return False
 
     def list(self):
-        return list(self._buffer)
+        return list(self.queue)
