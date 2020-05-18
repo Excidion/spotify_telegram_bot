@@ -7,10 +7,7 @@ from time import sleep
 
 def get_playlist_id_from_link(link):
     tail = os.path.split(link)[1]
-    if "?" in tail:
-        return tail.split("?")[0]
-    else:
-        return tail
+    return tail.split("?")[0]
 
 
 config = ConfigParser()
@@ -23,13 +20,11 @@ spotify_remote = SpotifyRemote(
     get_playlist_id_from_link(config.get("SPOTIFY", "playlist")),
 )
 
-bot = TelegramBot(
-    config.get("TELEGRAM", "token"),
-    spotify_remote,
-)
+bot = TelegramBot(config.get("TELEGRAM", "token"), spotify_remote)
 bot.start_bot()
 try:
     while not sleep(1):
         pass
-except KeyboardInterrupt: pass
+except KeyboardInterrupt:
+    pass
 bot.stop_bot()
