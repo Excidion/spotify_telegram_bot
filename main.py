@@ -2,6 +2,7 @@ from configparser import ConfigParser
 from spotify_remote import SpotifyRemote
 from telegram_bot import TelegramBot
 import os
+from time import sleep
 
 
 def get_playlist_id_from_link(link):
@@ -28,7 +29,7 @@ bot = TelegramBot(
 )
 bot.start_bot()
 try:
-    while True:
+    while not sleep(1):
         pass
 except KeyboardInterrupt: pass
 bot.stop_bot()
