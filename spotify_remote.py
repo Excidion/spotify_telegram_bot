@@ -2,9 +2,7 @@ import tekore
 
 
 class SpotifyRemote:
-    def __init__(
-        self, client_id, client_secret, username, fallback_playlist_id
-    ):
+    def __init__(self, client_id, client_secret, username):
         self.spotify = self.setup_spotify(client_id, client_secret)
         self.spotify_client = self.setup_spotify_client(
             client_id, client_secret, username
@@ -40,7 +38,7 @@ class SpotifyRemote:
         return f"{artists} - {track.name}"
 
     def get_track_preview(self, uri):
-        id = uri.split(":")[-1]
+        id = tekore.from_uri(uri)[1]
         return self.spotify.track(id).preview_url
 
     def play_pause(self):
