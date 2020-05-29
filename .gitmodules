@@ -1,3 +1,0 @@
-[submodule "spotipy"]
-	path = spotipy
-	url = https://github.com/felix-hilden/spotipy.git

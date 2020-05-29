@@ -1,6 +1,4 @@
-import spotipy
-import spotipy.util as util
-import spotipy.auth as auth
+import tekore
 from queue import Queue
 from threading import Thread
 from time import sleep
@@ -21,23 +19,23 @@ class SpotifyRemote:
         )
 
     def setup_spotify(self, client_id, client_secret):
-        cred = auth.Credentials(
+        cred = tekore.RefreshingCredentials(
             client_id=client_id,
             client_secret=client_secret,
             redirect_uri="http://localhost:/callback",
         )
         token = cred.request_client_token()
-        return spotipy.Spotify(token=token)
+        return tekore.Spotify(token=token)
 
     def setup_spotify_client(self, client_id, client_secret, username):
         scope = "user-modify-playback-state user-read-playback-state"
-        token = util.prompt_for_user_token(
+        token = tekore.prompt_for_user_token(
             scope=scope,
             client_id=client_id,
             client_secret=client_secret,
             redirect_uri="http://localhost:/callback",
         )
-        return spotipy.client.Spotify(token=token)
+        return tekore.Spotify(token=token)
 
     def search_track(self, search_string):
         results = {}
