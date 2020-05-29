@@ -59,4 +59,18 @@ class SpotifyRemote:
         pass  # TODO
 
     def add_to_queue(self, uri):
-        self.spotify_client.playback_queue_add(uri)
+        try:
+            self.spotify_client.playback_queue_add(uri)
+        except tekore.BadRequest or tekore.NotFound:
+            return False
+        else:
+            return True
+
+    def add_url(self, url):
+        try:
+            type, id = tekore.from_url(url)
+            uri = tekore.to_uri(type, id)
+        except tekore.ConversionError:
+            return False
+        else:
+            return self.add_to_queue(uri)

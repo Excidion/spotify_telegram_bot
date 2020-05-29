@@ -69,6 +69,7 @@ class TelegramBot:
                 )
             )
 
+        # conversation for adding song to queue
         dispatcher.add_handler(
             ConversationHandler(
                 entry_points=[
@@ -90,6 +91,14 @@ class TelegramBot:
             )
         )
 
+        #  adding songs to queue by sending link
+        dispatcher.add_handler(
+            MessageHandler(
+                Filters.entity("url") & self.user_filter, self.add_url
+            )
+        )
+
+        # conversation for entering password
         dispatcher.add_handler(
             ConversationHandler(
                 entry_points=[
@@ -241,7 +250,7 @@ class TelegramBot:
             if self.spotify.add_to_queue(context.user_data["selection_id"]):
                 response = "I'll add it to the queue!"
             else:
-                response = "Lucky you, it's already in the queue!"
+                response = "Hm, something went wrong."
             update.message.reply_text(
                 response, reply_markup=ReplyKeyboardRemove()
             )
@@ -259,6 +268,18 @@ class TelegramBot:
                 ),
             )
             return 1
+
+    # add song via url
+    def add_url(self, update, context):
+        url = update.message.text
+        url = url.split("?")[0]  # remove everything after "?"
+        success = self.spotify.add_url(url)
+        if success:
+            update.message.reply_text("Added it to the queue!")
+        else:
+            update.message.reply_text(
+                "Please send a valid link to a Spotify song."
+            )
 
     # password check
     def ask_for_password(self, update, context):
