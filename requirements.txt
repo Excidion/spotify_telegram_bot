@@ -1,2 +1,6 @@
-python-telegram-bot
-tekore
+python-telegram-bot==12.8
+tekore==3.6.0
+country_converter==0.7.2
+haversine==2.3.0
+staticmap==0.5.5
+pytz==2019.3

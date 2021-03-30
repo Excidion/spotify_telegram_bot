@@ -1,3 +1,5 @@
+Credits to [Excidion](https://github.com/Excidion). I built on top of Excidion's code to customize the bot for my use case.
+
 # Spotify Telegram Bot
 
 ## Setup
