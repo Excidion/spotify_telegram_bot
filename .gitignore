@@ -2,3 +2,7 @@
 *.p
 *.pyc
 *.cache-*
+personal_messages.json
+app.log
+locations.json
+config.ini
