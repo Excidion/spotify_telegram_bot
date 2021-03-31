@@ -397,7 +397,7 @@ class TelegramBot:
                                duration_listened.seconds,
                                self.pervious_country)
             speed_listened_text = prepare_distance_traveled_message(
-                distance_traveled, duration_listened, speed_during_song)
+                distance_traveled, speed_during_song, config.get("GENERAL", "MY_AVERAGE_CYCLING_SPEED"))
             self.send_message(
                 "I just finished listening to your song! " + length_listened_text + "Let me send you a map of the route on which you accompanied me with your song:", self.previous_message["chat_id"])
             self.send_image(draw_map(self.locations.find_locations(
