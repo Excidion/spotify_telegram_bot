@@ -26,7 +26,7 @@ excuse_array = ["I met a really nice goat",
                 "I met some really nice people ",
                 "I just got into an accident \U0001F62E	(hopefully not. Send me more songs to find out if I am still alive \U0001F601)"]
 
-going_fast_array = [""]
+going_fast_array = ["I went downhill", "I have really strong backwind", "I am on a train (very unlikely)", "I am on a ferry (check my location to see if I am on water)", "I like you and want to help you get more points"]
 
 going_slow_array = [""]
 
@@ -65,7 +65,6 @@ def get_weather_text(API_KEY, current_lat, current_lon):
     logger.info(
         "Weather data received.")
     weather_data = json_data["weather"][0]
-    # icon_url = "http://openweathermap.org/img/w/" z+ weather_data.icon + ".png";
     converter = coco.CountryConverter()
     country = converter.convert(
         json_data["sys"]["country"], src='ISO2', to='name_short')
@@ -94,36 +93,39 @@ def draw_map(location_entry):
     byte_io = BytesIO()
 
     image.save(byte_io, 'PNG')
-    #image.save(str(location_entry["message_id"]) + '.png')
     return byte_io.getvalue()
 
 
 def prepare_listened_length_message(locations_during_song, last_song_length, datetime_format):
     last_song_length_time = timedelta(milliseconds=last_song_length)
+    last_song_seconds = last_song_length_time.seconds % 60
+    last_song_minutes = (last_song_length_time.seconds // 60) % 60
     length_listened = datetime.now(
         pytz.utc) - datetime.strptime(locations_during_song[0]["time"], datetime_format)
-    listened_info = "I listened to your song for {}. ".format(
-        length_listened)
+    length_listened_seconds = length_listened.seconds % 60
+    length_listened_minutes = (length_listened.seconds // 60) % 60
+    listened_info = "I listened to your song for {} minutes {} seconds. ".format(
+        length_listened_minutes, length_listened_seconds)
     if last_song_length_time - length_listened > timedelta(seconds=20):
-        listened_info += "Seems like I didn't listen to the whole song since the song you sent me is actually {} long. A possible explanation is that I didn't like it. But that is not the only possibility! Maybe I couldn't keep listening to it because {}. I am just saying, let's not jump to conclusions. ".format(
-            last_song_length_time, excuse_array[randrange(len(excuse_array))])
+        listened_info += "Seems like I didn't listen to the whole song (the song you sent me is actually {}mins {}secs long. A possible explanation is that I didn't like it. But that is not the only possibility! Maybe I stopped listening to it because {}. I am just saying, let's not jump to conclusions. ".format(
+            last_song_minutes, last_song_seconds, excuse_array[randrange(len(excuse_array))])
     elif last_song_length_time - length_listened > timedelta(seconds=0):
         listened_info += "Seems like I liked your song, since I listened to the whole thing. "
     else:
-        listened_info += "I must have paused your song in the middle for a while since your song is only {} long. ".format(
-            last_song_length_time)
+        listened_info += "I must have paused your song in the middle for a while since your song is only {}mins {}secs long. ".format(
+            last_song_minutes, last_song_seconds)
     return listened_info, length_listened
 
 
-def prepare_distance_traveled_message(distance, length_listened, speed_during_song):
-    distance_info = "Your song has accompanied me for a total distance of {}km! Thank you so much. While listening to your song I had an average speed of {}km/h. ".format(
+def prepare_distance_traveled_message(distance, speed_during_song, average_speed):
+    distance_info = "Your song has accompanied me for a total distance of {}km! Thank you so much. While listening to your song I had an average speed of {}km/h.".format(
         distance, speed_during_song)
-    if speed_during_song > 20:
-        distance_info += "Wow, I went super fast during your song! Either I went downhill, had really strong backwind, or your song gave me a boost of energy. "
-    elif speed_during_song > 15:
+    if speed_during_song > average_speed*1.25:
+        distance_info += "Wow, I went super fast during your song (My average speed is usually around {}km/h)! Maybe {}, or your song gave me a boost of energy.".format(average_speed, going_fast_array[randrange(len(going_fast_array))])
+    elif speed_during_song > average_speed:
         distance_info += "I had a really nice cruising speed while listening to your song."
     else:
-        distance_info += "Man, I went kind of slow during your song. But oh well. It's not all about speed right? Maybe I went so slow because I stopped at a fruit tree or met some nice people."
+        distance_info += "I went kind of slow during your song. But oh well. It's not all about speed right? Maybe I didn't cover a lot of distance because {}. I am sorry I couldn't help you get more points this time. I will try my best to ride faster during the next song you send me!".format(excuse_array[randrange(len(excuse_array))])
     return distance_info
 
 
