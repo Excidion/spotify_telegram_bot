@@ -125,11 +125,11 @@ class LocationsHandler:
             your_rank_text = "You have already accompanied me on {}km in {} {} ({}) with your music! That ranks you place {} on my top DJ list. I have listened to the songs you sent me for a total of {} {}. So my average speed during that time was {}km/h!\n\n".format(
                 user_stats["distance"], len(user_stats["countries"]), "country" if len(user_stats["countries"]) == 1 else "countries", ', '.join(user_stats["countries"]), matching_rank_entry, user_stats["time_listened_min"], "minute" if user_stats["time_listened_min"] == 1 else "minutes", user_stats["average_speed"])
             if matching_rank_entry == 1:
-                motivation_text = "You are my favorite DJ at the moment! Thank you for your most appreciated support \U0001F618. \n\n"
+                motivation_text = "You are my favorite DJ at the moment! \U0001F947 Thank you for your most appreciated support \U0001F618. \n\n"
             else:
                 difference_to_above = leaderboard[matching_rank_entry -
                                                   2]["total_distance"] - entry_to_find["total_distance"]
-                motivation_text = "The person a rank above you accompanied me by {}km more than you. Let's close that gap and make YOU my top DJ!\n\n".format(
+                motivation_text = "The person a rank above you accompanied me by {}km more than you. Let's close that gap and make YOU my top DJ! \U0001F4BF \n\n".format(
                     difference_to_above)
             if matching_rank_entry > 10:
 
@@ -139,12 +139,12 @@ class LocationsHandler:
                         str(score[0]) + " - " + str(score[1]) + "km \n"
                     rank += 1
         else:
-            your_rank_text = "I have not listened to any songs sent by you yet. I am therefore not able to give you your rank.\n\n"
+            your_rank_text = "I have not listened to any songs sent by you yet. I am therefore not able to give you your rank.\U0001F625 \n\n"
 
         if len(leaderboard) > 0:
             leaderboard_text = "My top 10 DJs: \n"
         else:
-            leaderboard_text = "I have not been sent any songs yet and can therefore not show you a leaderboard.\n"
+            leaderboard_text = "I have not been sent any songs yet and can therefore not show you a leaderboard.\U0001F625 \n"
         rank = 1
         for score in leaderboard[:10]:
             leaderboard_text += str(rank) + ". " + \

@@ -416,7 +416,7 @@ class TelegramBot:
                     "",
                     "Welcome to the greatest bot on Telegram!",
                     "",
-                    "First use /password (<- click here) to verify you are really allowed to use this beast.",
+                    "First use /password (<- click here) to verify you are really allowed to use this beast \U0001F510.",
                     "",
                     "Afterwards use /song to send me some music \U0001F3B6 and then watch the magic happen as I listen to it.",
                     "",
@@ -614,7 +614,7 @@ class TelegramBot:
 
         elif response == "Stop searching.":
             update.message.reply_text(
-                "Sorry that i couldn't help you.",
+                "Sorry that I couldn't help you.",
                 reply_markup=ReplyKeyboardRemove(),
             )
             del context.user_data["song_search_results"]
@@ -655,7 +655,7 @@ class TelegramBot:
                 one_time_keyboard=True,
             )
             update.message.reply_text(
-                "Do you want to add a message? \n(This message will be played to me at the start of your song.)",
+                "Do you want to add a message? \U0001F4DD \n(This message will be played to me at the start of your song.)",
                 reply_markup=reply_keyboard,
             )
             del context.user_data["song_search_results"]
@@ -729,12 +729,12 @@ class TelegramBot:
     def check_password(self, update, context):
         if update.message.text.lower() == self.user_filter.password:
             self.user_filter.add_user(update.message.chat_id)
-            update.message.reply_text("That's correct.")
+            update.message.reply_text("That's correct. \U0001F513")
             update.message.reply_text("Use /song to send me a song.")
             return ConversationHandler.END
         else:
             update.message.reply_text(
-                "Nah, nah, nah. You didn't say the magic word."
+                "Nah, nah, nah. You didn't say the magic word. \U0001F512"
             )
             return 0
 
