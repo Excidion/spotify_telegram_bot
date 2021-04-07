@@ -124,7 +124,7 @@ def prepare_listened_length_message(locations_during_song, last_song_length, dat
     listened_info = "I listened to your song for {} minutes {} seconds. ".format(
         length_listened_minutes, length_listened_seconds)
     if last_song_length_time - length_listened > timedelta(seconds=20):
-        listened_info += "Seems like I didn't listen to the whole song (the song you sent me is actually {}mins {}secs long. A possible explanation is that I didn't like it. But that is not the only possibility! Maybe I stopped listening to it because {}. I am just saying, let's not jump to conclusions. ".format(
+        listened_info += "Seems like I didn't listen to the whole song (the song you sent me is actually {}mins {}secs long). A possible explanation is that I didn't like it. But that is not the only possibility! Maybe I stopped listening to it because {}. I am just saying, let's not jump to conclusions. ".format(
             last_song_minutes, last_song_seconds, excuse_array[randrange(len(excuse_array))])
     elif last_song_length_time - length_listened > timedelta(seconds=0):
         listened_info += "Seems like I liked your song, since I listened to the whole thing. "
@@ -135,7 +135,7 @@ def prepare_listened_length_message(locations_during_song, last_song_length, dat
 
 
 def prepare_distance_traveled_message(distance, speed_during_song, average_speed):
-    distance_info = "Your song has accompanied me for a total distance of {}km! Thank you so much. While listening to your song I had an average speed of {}km/h.".format(
+    distance_info = "Your song has accompanied me for a total distance of {}km! Thank you so much. While listening to your song I had an average speed of {}km/h. ".format(
         distance, speed_during_song)
     if speed_during_song > average_speed*1.25:
         distance_info += "Wow, I went super fast during your song (My average speed is usually around {}km/h)! Maybe {}, or your song gave me a boost of energy \U0001F50B.".format(average_speed, going_fast_array[randrange(len(going_fast_array))])
