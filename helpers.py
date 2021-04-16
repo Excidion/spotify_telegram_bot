@@ -126,7 +126,7 @@ def prepare_listened_length_message(locations_during_song, last_song_length, dat
     if last_song_length_time - length_listened > timedelta(seconds=20):
         listened_info += "Seems like I didn't listen to the whole song (the song you sent me is actually {}mins {}secs long). A possible explanation is that I didn't like it. But that is not the only possibility! Maybe I stopped listening to it because {}. I am just saying, let's not jump to conclusions. ".format(
             last_song_minutes, last_song_seconds, excuse_array[randrange(len(excuse_array))])
-    elif last_song_length_time - length_listened > timedelta(seconds=0):
+    elif last_song_length_time - length_listened > timedelta(seconds=-10):
         listened_info += "Seems like I liked your song, since I listened to the whole thing. "
     else:
         listened_info += "I must have paused your song in the middle for a while since your song is only {}mins {}secs long. ".format(
