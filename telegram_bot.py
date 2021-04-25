@@ -87,7 +87,8 @@ class TelegramBot:
             "register": self.register,
             "skip": self.skip_track,
             "stop": self.stop_listening,
-            "p": self.play_pause
+            "p": self.play_pause,
+            "hm": self.provide_unlistened_songs_details
         }
         # "listen": self.start_listening,
         for command in ADMIN_COMMAND_MAP:
@@ -525,6 +526,16 @@ class TelegramBot:
 
     def play_pause(self, update, context):
         self.spotify.play_pause()
+
+    def provide_unlistened_songs_details(self, update, context):
+        unlistened_songs_info = ""
+        unlistened_songs = self.personal_messages.get_unlistened_messages()
+        unlistened_songs_info += "You have {} songs waiting to be listened to.\n".format(len(unlistened_songs))
+        count = 1
+        for song in unlistened_songs:
+            unlistened_songs_info += "\nSong {} sent by {} at {}".format(count, song["first_name"], song["timestamp"])
+            count += 1
+        self.message_me(unlistened_songs_info)
 
     # session setup
     def start_listening(self, update, context):
