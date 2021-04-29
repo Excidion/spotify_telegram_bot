@@ -288,8 +288,11 @@ class TelegramBot:
                                 message["first_name"], message["content"], message["timestamp"]))
                             # notify sender of song that I just started listening
                             try:
+                                song_title = self.spotify.get_title_from_track(currently_playing.item).split("-")[-1].strip()
                                 self.send_message(
-                                    "Thanks for sending me a song. I just started listening to it.", message["chat_id"])
+                                    "Thanks for sending me the song \"{}\". I just started listening to it.".format(song_title),
+                                    message["chat_id"]
+                                )
                             except:
                                 self.message_me("Not able to send message to chat with chat_id {}. Marking it listened.".format(
                                     message["chat_id"]))
