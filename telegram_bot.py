@@ -783,7 +783,7 @@ class TelegramBot:
             update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
             new_song_dict = self.personal_messages.get_last_added_message()
             new_song_added_by = new_song_dict["first_name"]
-            self.message_me(f"A new song from {new_song_added_by} is added.")
+            self.message_me(f"A new song from {new_song_added_by} was added.")
             return ConversationHandler.END
 
     def react_to_message_content(self, update, context):
