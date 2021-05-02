@@ -63,9 +63,9 @@ class PersonalMessageHandler:
             output_dict = [x for x in message_list if x["status"] == "created"]
             return output_dict
 
-    def notify_admin_new_song_in_queue(self):
+    def get_last_added_message(self):
         with open("personal_messages.json", "r") as json_file:
             data = json.load(json_file)
             song_list = data["personal_messages"]
-            new_song_dict = song_list[0]
+            new_song_dict = song_list[-1]
             return new_song_dict

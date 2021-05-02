@@ -781,7 +781,7 @@ class TelegramBot:
             )
             response = "Song added."
             update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
-            new_song_dict = self.personal_messages.notify_admin_new_song_in_queue()
+            new_song_dict = self.personal_messages.get_last_added_message()
             new_song_added_by = new_song_dict["first_name"]
             self.message_me(f"A new song from {new_song_added_by} is added.")
             return ConversationHandler.END
@@ -799,7 +799,7 @@ class TelegramBot:
 
         response = "Song and message added."
         update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
-        new_song_dict = self.personal_messages.notify_admin_new_song_in_queue()
+        new_song_dict = self.personal_messages.get_last_added_message()
         new_song_added_by = new_song_dict["first_name"]
         self.message_me(f"A new song from {new_song_added_by} is added.")
         return ConversationHandler.END
