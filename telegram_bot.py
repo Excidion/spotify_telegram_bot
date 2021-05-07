@@ -6,7 +6,7 @@ from telegram.ext import (
     CommandHandler,
     ConversationHandler,
     Filters,
-    CallbackContext
+    CallbackContext,
 )
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 import pickle
@@ -51,9 +51,7 @@ class UserFilter(BaseFilter):
 
     def filter(self, message):
         if message.chat_id not in self.user_chat_ids:
-            message.reply_text(
-                "First use /password and tell me the magic word."
-            )
+            message.reply_text("First use /password and tell me the magic word.")
         return message.chat_id in self.user_chat_ids
 
     def add_user(self, id):
@@ -61,8 +59,13 @@ class UserFilter(BaseFilter):
 
 
 class TelegramBot:
-    def __init__(self, token, spotify_remote, personal_message_handler, locations_handler):
-        self.updater = Updater(token=token, use_context=True,)
+    def __init__(
+        self, token, spotify_remote, personal_message_handler, locations_handler
+    ):
+        self.updater = Updater(
+            token=token,
+            use_context=True,
+        )
         self.user_filter = UserFilter()
         dispatcher = self.updater.dispatcher
         self.spotify = spotify_remote
@@ -75,11 +78,14 @@ class TelegramBot:
             "now": self.print_now_playing,
             "next": self.print_next_song,
             "help": self.send_help,
-            "rank": self.print_leaderboard
+            "rank": self.print_leaderboard,
         }
         for command in COMMAND_MAP:
             dispatcher.add_handler(
-                CommandHandler(command, COMMAND_MAP[command],)
+                CommandHandler(
+                    command,
+                    COMMAND_MAP[command],
+                )
             )
 
         ADMIN_COMMAND_MAP = {
@@ -88,13 +94,15 @@ class TelegramBot:
             "skip": self.skip_track,
             "stop": self.stop_listening,
             "p": self.play_pause,
-            "hm": self.provide_unlistened_songs_details
+            "hm": self.provide_unlistened_songs_details,
         }
         # "listen": self.start_listening,
         for command in ADMIN_COMMAND_MAP:
             dispatcher.add_handler(
                 CommandHandler(
-                    command, ADMIN_COMMAND_MAP[command], filters=AdminFilter(),
+                    command,
+                    ADMIN_COMMAND_MAP[command],
+                    filters=AdminFilter(),
                 )
             )
 
@@ -109,7 +117,11 @@ class TelegramBot:
                     ),
                 ],
                 states={
-                    0: [MessageHandler(Filters.text, self.react_to_location_sharing_selection)]
+                    0: [
+                        MessageHandler(
+                            Filters.text, self.react_to_location_sharing_selection
+                        )
+                    ]
                 },
                 fallbacks=[CommandHandler("cancel", self.cancel)],
                 allow_reentry=True,
@@ -140,16 +152,17 @@ class TelegramBot:
 
         #  adding songs to queue by sending link
         dispatcher.add_handler(
-            MessageHandler(
-                Filters.entity("url") & self.user_filter, self.add_url
-            )
+            MessageHandler(Filters.entity("url") & self.user_filter, self.add_url)
         )
 
         # conversation for entering password
         dispatcher.add_handler(
             ConversationHandler(
                 entry_points=[
-                    CommandHandler("password", self.ask_for_password,),
+                    CommandHandler(
+                        "password",
+                        self.ask_for_password,
+                    ),
                 ],
                 states={
                     0: [MessageHandler(Filters.text, self.check_password)],
@@ -165,8 +178,7 @@ class TelegramBot:
 
         dispatcher.add_handler(location_handler)
 
-        dispatcher.add_handler(MessageHandler(
-            Filters.text, self.default_message))
+        dispatcher.add_handler(MessageHandler(Filters.text, self.default_message))
 
         self.last_playing = ""
         self.last_playing_progress = 0
@@ -196,39 +208,54 @@ class TelegramBot:
             self.DEFAULT_CONTACT_ID = None
 
     def add_new_songs_to_queue(self, unlistened_songs):
-        new_songs = list(itertools.filterfalse(
-            lambda x: x in self.songs_to_listen, unlistened_songs))
-        logger.info(
-            "{} new songs will be added to queue.".format(len(new_songs)))
+        new_songs = list(
+            itertools.filterfalse(lambda x: x in self.songs_to_listen, unlistened_songs)
+        )
+        logger.info("{} new songs will be added to queue.".format(len(new_songs)))
         for song in new_songs:
             self.spotify.add_to_queue(song["uri"])
-            logger.info("Song with uri {} sent by {} (chat_id: {}) added to queue.".format(
-                song["uri"], song["first_name"], song["chat_id"]))
+            logger.info(
+                "Song with uri {} sent by {} (chat_id: {}) added to queue.".format(
+                    song["uri"], song["first_name"], song["chat_id"]
+                )
+            )
         self.songs_to_listen = unlistened_songs
 
     def is_new_song(self, currently_playing_uri, current_progress, is_paused):
         # check if just paused
         if is_paused:
             return False
-        return self.last_playing != currently_playing_uri or (self.last_playing == currently_playing_uri and current_progress < self.last_playing_progress)
+        return self.last_playing != currently_playing_uri or (
+            self.last_playing == currently_playing_uri
+            and current_progress < self.last_playing_progress
+        )
 
     def handle_location_tracking(self, chat_id):
         # turn on location data recording through the location() function
         self.record_location = True
         # add the first coordinates. The location() function will trigger on any future location updates
         self.locations_during_song.append(
-            {"lon": self.current_lon, "lat": self.current_lat, "time": datetime.now(pytz.utc).__str__()})
+            {
+                "lon": self.current_lon,
+                "lat": self.current_lat,
+                "time": datetime.now(pytz.utc).__str__(),
+            }
+        )
         try:
             self.pervious_country, weather_string = get_weather_text(
-                config.get("WEATHER", "API_KEY"), self.current_lat, self.current_lon)
+                config.get("WEATHER", "API_KEY"), self.current_lat, self.current_lon
+            )
         except:
-            self.message_me("Not able to retrieve weather data for lat:{}, lon:{}.".format(
-                self.current_lat, self.current_lon))
+            self.message_me(
+                "Not able to retrieve weather data for lat:{}, lon:{}.".format(
+                    self.current_lat, self.current_lon
+                )
+            )
             return
         self.send_message(
-            weather_string + " Let me send you my exact location: ", chat_id)
-        self.send_location(
-            self.current_lat, self.current_lon, chat_id)
+            weather_string + " Let me send you my exact location: ", chat_id
+        )
+        self.send_location(self.current_lat, self.current_lon, chat_id)
 
     def end_session(self):
         if self.activate_locations and self.record_location:
@@ -254,9 +281,11 @@ class TelegramBot:
                     self.end_session()
                 else:
                     logger.error(
-                        "A problem occurred when attempting to remove the job.")
+                        "A problem occurred when attempting to remove the job."
+                    )
                     self.message_me(
-                        "A problem occurred when attempting to remove the job. Please try again with /stop.")
+                        "A problem occurred when attempting to remove the job. Please try again with /stop."
+                    )
             else:
                 self.message_me("You are already offline.")
         elif currently_playing is not None and currently_playing.item is not None:
@@ -266,9 +295,14 @@ class TelegramBot:
             unlistened_songs = self.personal_messages.get_unlistened_messages()
             self.add_new_songs_to_queue(unlistened_songs)
             # if song change
-            if self.is_new_song(currently_playing_uri, currently_playing.progress_ms, self.is_paused):
-                logger.info("Song changed from {} to {}.".format(
-                    self.last_playing, currently_playing_uri))
+            if self.is_new_song(
+                currently_playing_uri, currently_playing.progress_ms, self.is_paused
+            ):
+                logger.info(
+                    "Song changed from {} to {}.".format(
+                        self.last_playing, currently_playing_uri
+                    )
+                )
                 # if location recording is on, then save locations for previous song
                 if self.record_location:
                     self.save_locations()
@@ -276,48 +310,74 @@ class TelegramBot:
                 for song in unlistened_songs:
                     # check if song was sent by someone
                     if currently_playing_uri == song["uri"]:
-                        logger.info("Current song {} matches a sent and unlistened song.".format(
-                            currently_playing_uri))
+                        logger.info(
+                            "Current song {} matches a sent and unlistened song.".format(
+                                currently_playing_uri
+                            )
+                        )
                         message = self.personal_messages.find_message(
-                            currently_playing_uri)
+                            currently_playing_uri
+                        )
                         self.last_song_length = currently_playing.item.duration_ms
                         if message["chat_id"] is not None:
                             # send the personal_message to my telegram
-                            self.message_me("sent by {}. {}".format(
-                                message["first_name"], message["content"]))
-                            logger.info("Message from {} with content: {} sent at {}.".format(
-                                message["first_name"], message["content"], message["timestamp"]))
+                            self.message_me(
+                                "sent by {}. {}".format(
+                                    message["first_name"], message["content"]
+                                )
+                            )
+                            logger.info(
+                                "Message from {} with content: {} sent at {}.".format(
+                                    message["first_name"],
+                                    message["content"],
+                                    message["timestamp"],
+                                )
+                            )
                             # notify sender of song that I just started listening
                             try:
-                                song_title = self.spotify.get_title_from_track(currently_playing.item).split("-")[-1].strip()
+                                song_title = (
+                                    self.spotify.get_title_from_track(
+                                        currently_playing.item
+                                    )
+                                    .split("-")[-1]
+                                    .strip()
+                                )
                                 self.send_message(
-                                    "Thanks for sending me the song \"{}\". I just started listening to it.".format(song_title),
-                                    message["chat_id"]
+                                    'Thanks for sending me the song "{}". I just started listening to it.'.format(
+                                        song_title
+                                    ),
+                                    message["chat_id"],
                                 )
                             except:
-                                self.message_me("Not able to send message to chat with chat_id {}. Marking it listened.".format(
-                                    message["chat_id"]))
-                                self.personal_messages.mark_message_listened(
-                                    message)
+                                self.message_me(
+                                    "Not able to send message to chat with chat_id {}. Marking it listened.".format(
+                                        message["chat_id"]
+                                    )
+                                )
+                                self.personal_messages.mark_message_listened(message)
                                 return
                             # start recording locations if tracking is activated
                             if self.activate_locations:
-                                self.handle_location_tracking(
-                                    message["chat_id"])
-                            self.personal_messages.mark_message_listened(
-                                message)
+                                self.handle_location_tracking(message["chat_id"])
+                            self.personal_messages.mark_message_listened(message)
                             # add the song to the designated playlist if name is set
-                            if (config.get(
-                                    "SPOTIFY", "PLAYLIST_NAME") is not None):
+                            if config.get("SPOTIFY", "PLAYLIST_NAME") is not None:
                                 try:
-                                    self.add_to_playlist(config.get(
-                                        "SPOTIFY", "PLAYLIST_NAME"), currently_playing_uri)
+                                    self.add_to_playlist(
+                                        config.get("SPOTIFY", "PLAYLIST_NAME"),
+                                        currently_playing_uri,
+                                    )
                                 except:
-                                    self.message_me("Not able to add song with uri {} to playlist with name: {}".format(currently_playing_uri, config.get(
-                                        "SPOTIFY", "PLAYLIST_NAME")))
+                                    self.message_me(
+                                        "Not able to add song with uri {} to playlist with name: {}".format(
+                                            currently_playing_uri,
+                                            config.get("SPOTIFY", "PLAYLIST_NAME"),
+                                        )
+                                    )
                             self.previous_message = message
                             logger.info(
-                                "Thank you message sent and song added to playlist.")
+                                "Thank you message sent and song added to playlist."
+                            )
                         break  # exit loop once message found
             self.last_playing = currently_playing_uri
             self.last_playing_progress = currently_playing.progress_ms
@@ -338,33 +398,31 @@ class TelegramBot:
         if self.DEFAULT_CONTACT_ID is not None:
             self.send_message(text, self.DEFAULT_CONTACT_ID)
         else:
-            logger.info(
-                "Please /register your Telegram Account to use this function.")
-            print(
-                "Please /register your Telegram Account to use this function."
-            )
+            logger.info("Please /register your Telegram Account to use this function.")
+            print("Please /register your Telegram Account to use this function.")
 
     def send_message(self, text, id):
         self.updater.bot.send_message(chat_id=id, text=text)
 
     def send_image(self, image, id):
         byte_image = io.BufferedReader(io.BytesIO(image))
-        self.updater.bot.send_photo(
-            chat_id=id, photo=byte_image)
+        self.updater.bot.send_photo(chat_id=id, photo=byte_image)
 
     def send_location(self, lat, lon, id):
-        self.updater.bot.send_location(
-            chat_id=id, latitude=lat, longitude=lon)
+        self.updater.bot.send_location(chat_id=id, latitude=lat, longitude=lon)
 
     # gets triggered on a location message
     # keeps updating self.current_lat and self.current_lon from the live location message
     def location(self, update, context):
         message = None
         if update.edited_message:
-            if self.want_to_listen and update.edited_message["date"].strftime(DATETIME_FORMAT) < self.location_request_time.strftime(DATETIME_FORMAT):
+            if self.want_to_listen and update.edited_message["date"].strftime(
+                DATETIME_FORMAT
+            ) < self.location_request_time.strftime(DATETIME_FORMAT):
                 print("update", update)
                 self.message_me(
-                    "It appears you are already sharing a live location. Please turn that off first.")
+                    "It appears you are already sharing a live location. Please turn that off first."
+                )
                 return
             message = update.edited_message
         else:
@@ -373,39 +431,58 @@ class TelegramBot:
         self.current_lon = message.location.longitude
         if self.record_location == True and not self.is_paused:
             self.locations_during_song.append(
-                {"lon": self.current_lon, "lat": self.current_lat, "time": datetime.now(pytz.utc).__str__()})
+                {
+                    "lon": self.current_lon,
+                    "lat": self.current_lat,
+                    "time": datetime.now(pytz.utc).__str__(),
+                }
+            )
         if self.listening == False and self.want_to_listen == True:
             self.start_job()
 
     def save_locations(self):
-        logger.info("Saving locations for personal message with id: {}.".format(
-            self.previous_message["id"]))
+        logger.info(
+            "Saving locations for personal message with id: {}.".format(
+                self.previous_message["id"]
+            )
+        )
         if len(self.locations_during_song) > 0:
 
             length_listened_text, duration_listened = prepare_listened_length_message(
-                self.locations_during_song, self.last_song_length, DATETIME_FORMAT)
-            distance_traveled = calculate_distance(
-                self.locations_during_song)
+                self.locations_during_song, self.last_song_length, DATETIME_FORMAT
+            )
+            distance_traveled = calculate_distance(self.locations_during_song)
             speed_during_song = round(
-                distance_traveled / (duration_listened.seconds / 3600), 2)
-            self.locations.add(self.locations_during_song,
-                               self.previous_message["id"],
-                               self.previous_message["chat_id"],
-                               self.previous_message["username"],
-                               self.previous_message["first_name"],
-                               self.previous_message["last_name"],
-                               distance_traveled,
-                               speed_during_song,
-                               duration_listened.seconds,
-                               self.pervious_country)
+                distance_traveled / (duration_listened.seconds / 3600), 2
+            )
+            self.locations.add(
+                self.locations_during_song,
+                self.previous_message["id"],
+                self.previous_message["chat_id"],
+                self.previous_message["username"],
+                self.previous_message["first_name"],
+                self.previous_message["last_name"],
+                distance_traveled,
+                speed_during_song,
+                duration_listened.seconds,
+                self.pervious_country,
+            )
             speed_listened_text = prepare_distance_traveled_message(
-                distance_traveled, speed_during_song, float(config.get("GENERAL", "MY_AVERAGE_CYCLING_SPEED")))
+                distance_traveled,
+                speed_during_song,
+                float(config.get("GENERAL", "MY_AVERAGE_CYCLING_SPEED")),
+            )
             self.send_message(
-                "I just finished listening to your song! " + length_listened_text + "Let me send you a map of the route on which you accompanied me with your song:", self.previous_message["chat_id"])
-            self.send_image(draw_map(self.locations.find_locations(
-                self.previous_message["id"])), self.previous_message["chat_id"])
-            self.send_message(speed_listened_text,
-                              self.previous_message["chat_id"])
+                "I just finished listening to your song! "
+                + length_listened_text
+                + "Let me send you a map of the route on which you accompanied me with your song:",
+                self.previous_message["chat_id"],
+            )
+            self.send_image(
+                draw_map(self.locations.find_locations(self.previous_message["id"])),
+                self.previous_message["chat_id"],
+            )
+            self.send_message(speed_listened_text, self.previous_message["chat_id"])
         self.locations_during_song = []
         self.record_location = False
 
@@ -428,7 +505,7 @@ class TelegramBot:
                     "",
                     "If you are stuck at any point, use /help.",
                     "",
-                    "To see my current top DJs, use /rank."
+                    "To see my current top DJs, use /rank.",
                 ]
             ),
         )
@@ -439,8 +516,7 @@ class TelegramBot:
     def print_leaderboard(self, update, context):
         username = update.message.from_user.username
         chat_id = update.message.chat.id
-        leadership_string = self.locations.build_leaderboard(
-            chat_id)
+        leadership_string = self.locations.build_leaderboard(chat_id)
         update.message.reply_text(leadership_string)
 
     def print_next_song(self, update, context):
@@ -464,7 +540,7 @@ class TelegramBot:
                     "",
                     "Use /rank (<- click on it) to see how you measure against the other great DJs out there.",
                     "",
-                    "If you want step by step instructions on how to use the bot, then click on the following link: https://youtu.be/d8HdV3U9Rs8."
+                    "If you want step by step instructions on how to use the bot, then click on the following link: https://youtu.be/d8HdV3U9Rs8.",
                 ]
             ),
         )
@@ -486,10 +562,8 @@ class TelegramBot:
                 logger.info("Job Successfully Removed.")
                 self.end_session()
             else:
-                logger.error(
-                    "A problem occurred when attempting to remove the job.")
-                self.message_me(
-                    "A problem occurred when attempting to remove the job.")
+                logger.error("A problem occurred when attempting to remove the job.")
+                self.message_me("A problem occurred when attempting to remove the job.")
         else:
             self.message_me("You are already offline.")
 
@@ -498,15 +572,19 @@ class TelegramBot:
 
     def add_to_playlist(self, playlist_name, item):
         playlist_id = None
-        for playlist in self.spotify.spotify_client.playlists(config.get("SPOTIFY", "USERNAME")).items:
+        for playlist in self.spotify.spotify_client.playlists(
+            config.get("SPOTIFY", "USERNAME")
+        ).items:
             if playlist.name == playlist_name:
                 playlist_id = playlist.id
                 break
         if playlist_id is None:
-            new_playlist = self.spotify.spotify_client.playlist_create(config.get("SPOTIFY", "USERNAME"),
-                                                                       playlist_name,
-                                                                       public=False,
-                                                                       description="this playlist contains all the songs sent to me, which I already listened to")
+            new_playlist = self.spotify.spotify_client.playlist_create(
+                config.get("SPOTIFY", "USERNAME"),
+                playlist_name,
+                public=False,
+                description="this playlist contains all the songs sent to me, which I already listened to",
+            )
             playlist_id = new_playlist.id
         self.spotify.spotify_client.playlist_add(playlist_id, [item])
 
@@ -523,9 +601,7 @@ class TelegramBot:
     def skip_track(self, update, context):
         update.message.reply_text("I will skip this one.")
         self.spotify.skip()
-        update.message.reply_text(
-            f'Next one is "{self.spotify.now_playing()}".'
-        )
+        update.message.reply_text(f'Next one is "{self.spotify.now_playing()}".')
 
     def play_pause(self, update, context):
         self.spotify.play_pause()
@@ -533,10 +609,16 @@ class TelegramBot:
     def provide_unlistened_songs_details(self, update, context):
         unlistened_songs_info = ""
         unlistened_songs = self.personal_messages.get_unlistened_messages()
-        unlistened_songs_info += "You have {} songs waiting to be listened to.\n".format(len(unlistened_songs))
+        unlistened_songs_info += (
+            "You have {} songs waiting to be listened to.\n".format(
+                len(unlistened_songs)
+            )
+        )
         count = 1
         for song in unlistened_songs:
-            unlistened_songs_info += "\nSong {} sent by {} at {}".format(count, song["first_name"], song["timestamp"])
+            unlistened_songs_info += "\nSong {} sent by {} at {}".format(
+                count, song["first_name"], song["timestamp"]
+            )
             count += 1
         self.message_me(unlistened_songs_info)
 
@@ -546,17 +628,15 @@ class TelegramBot:
         if currently_playing is None:
             logger.info("No active device on start-up.")
             self.message_me(
-                "No Active Device. Please go online on Spotify and then type /listen again.")
+                "No Active Device. Please go online on Spotify and then type /listen again."
+            )
             return
         if self.listening:
             self.message_me("You are already online.")
             return
         self.want_to_listen = True
         reply_keyboard = ReplyKeyboardMarkup(
-            [
-                ["No."],
-                ["Yes."]  # [{"text": "Yes.", "request_location": True}]
-            ],
+            [["No."], ["Yes."]],  # [{"text": "Yes.", "request_location": True}]
             one_time_keyboard=True,
         )
         update.message.reply_text(
@@ -567,15 +647,18 @@ class TelegramBot:
 
     def start_job(self):
         if self.listening:
-            self.message_me(
-                "You are already online. Use /stop to stop listening")
+            self.message_me("You are already online. Use /stop to stop listening")
             return
         self.job = self.updater.job_queue.run_repeating(
-            self.check_if_song_change, interval=1, first=0, name="my_job")
+            self.check_if_song_change, interval=1, first=0, name="my_job"
+        )
         logger.info("Job started.")
         self.listening = True
-        self.message_me("You are now online. A total of {} songs are waiting for you.".format(
-            len(self.personal_messages.get_unlistened_messages())))
+        self.message_me(
+            "You are now online. A total of {} songs are waiting for you.".format(
+                len(self.personal_messages.get_unlistened_messages())
+            )
+        )
 
     def react_to_location_sharing_selection(self, update, context):
         response = update.message.text
@@ -619,7 +702,8 @@ class TelegramBot:
         response = update.message.text
         if response == "Try another search.":
             update.message.reply_text(
-                "Okay, how is it called?", reply_markup=ReplyKeyboardRemove(),
+                "Okay, how is it called?",
+                reply_markup=ReplyKeyboardRemove(),
             )
             del context.user_data["song_search_results"]
             return 0
@@ -674,50 +758,50 @@ class TelegramBot:
             return 3
         elif response == "No, show me the other ones again.":
             options = [["Try another search.", "Stop searching."]]
-            options += [
-                [x] for x in context.user_data["song_search_results"].keys()
-            ]
+            options += [[x] for x in context.user_data["song_search_results"].keys()]
             update.message.reply_text(
                 text="Here is the list again. Can you see the right one now?",
-                reply_markup=ReplyKeyboardMarkup(
-                    options, one_time_keyboard=True
-                ),
+                reply_markup=ReplyKeyboardMarkup(options, one_time_keyboard=True),
             )
             return 1
 
     def react_to_message_option(self, update, context):
         response = update.message.text
         if response == "Yes, I want to add a message!":
-            update.message.reply_text(
-                "Type the message now."
-            )
+            update.message.reply_text("Type the message now.")
             return 4
         elif response == "No, I don't want to add a message.":
-            self.personal_messages.add("",
-                                       context.user_data["selection_id"],
-                                       update.message.from_user.first_name,
-                                       update.message.from_user.last_name,
-                                       update.message.from_user.username,
-                                       update.message.chat.id)
-            response = "Song added."
-            update.message.reply_text(
-                response, reply_markup=ReplyKeyboardRemove()
+            self.personal_messages.add(
+                "",
+                context.user_data["selection_id"],
+                update.message.from_user.first_name,
+                update.message.from_user.last_name,
+                update.message.from_user.username,
+                update.message.chat.id,
             )
+            response = "Song added."
+            update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+            new_song_dict = self.personal_messages.get_last_added_message()
+            new_song_added_by = new_song_dict["first_name"]
+            self.message_me(f"A new song from {new_song_added_by} was added.")
             return ConversationHandler.END
 
     def react_to_message_content(self, update, context):
         message_content = update.message.text
-        self.personal_messages.add(message_content,
-                                   context.user_data["selection_id"],
-                                   update.message.from_user.first_name,
-                                   update.message.from_user.last_name,
-                                   update.message.from_user.username,
-                                   update.message.chat.id)
+        self.personal_messages.add(
+            message_content,
+            context.user_data["selection_id"],
+            update.message.from_user.first_name,
+            update.message.from_user.last_name,
+            update.message.from_user.username,
+            update.message.chat.id,
+        )
 
         response = "Song and message added."
-        update.message.reply_text(
-            response, reply_markup=ReplyKeyboardRemove()
-        )
+        update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+        new_song_dict = self.personal_messages.get_last_added_message()
+        new_song_added_by = new_song_dict["first_name"]
+        self.message_me(f"A new song from {new_song_added_by} was added.")
         return ConversationHandler.END
 
     # add song via url
@@ -728,14 +812,15 @@ class TelegramBot:
         if success:
             update.message.reply_text("Added it to the queue!")
         else:
-            update.message.reply_text(
-                "Please send a valid link to a Spotify song."
-            )
+            update.message.reply_text("Please send a valid link to a Spotify song.")
 
     # password check
     def ask_for_password(self, update, context):
-        update.message.reply_text(config.get(
-            "TELEGRAM", "PASSWORD_QUESTION") + "\nHint: " + config.get("TELEGRAM", "PASSWORD_HINT"))
+        update.message.reply_text(
+            config.get("TELEGRAM", "PASSWORD_QUESTION")
+            + "\nHint: "
+            + config.get("TELEGRAM", "PASSWORD_HINT")
+        )
         return 0
 
     def check_password(self, update, context):
@@ -753,7 +838,8 @@ class TelegramBot:
     # general conversation commands
     def cancel(self, update, context):
         update.message.reply_text(
-            "Action canceled.", reply_markup=ReplyKeyboardRemove(),
+            "Action canceled.",
+            reply_markup=ReplyKeyboardRemove(),
         )
         return ConversationHandler.END
 
@@ -766,7 +852,12 @@ class TelegramBot:
     def error(self, update, context):
         # Log Errors caused by Updates.
         logger.error('Update "%s" caused error "%s"', update, context.error)
-        self.send_message("Error in {}'s Bot. Check logs please. {} {}".format(config.get(
-            "TELEGRAM", "ADMIN"), datetime.now().__str__(), context.error), self.DEFAULT_CONTACT_ID)  # hardcoded to mine
+        self.send_message(
+            "Error in {}'s Bot. Check logs please. {} {}".format(
+                config.get("TELEGRAM", "ADMIN"), datetime.now().__str__(), context.error
+            ),
+            self.DEFAULT_CONTACT_ID,
+        )  # hardcoded to mine
         self.updater.bot.send_document(
-            chat_id=self.DEFAULT_CONTACT_ID, document=open('app.log', 'rb'))
+            chat_id=self.DEFAULT_CONTACT_ID, document=open("app.log", "rb")
+        )
