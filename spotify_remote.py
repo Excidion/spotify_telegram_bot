@@ -25,7 +25,7 @@ class SpotifyRemote:
 
     def get_title_from_track(self, track):
         artists = ", ".join([artist.name for artist in track.artists])
-        return "{} - {}".format(artists, track.name)
+        return "{} | {}".format(artists, track.name)
 
     def get_track_preview(self, uri):
         id = tekore.from_uri(uri)[1]

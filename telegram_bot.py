@@ -339,7 +339,7 @@ class TelegramBot:
                                     self.spotify.get_title_from_track(
                                         currently_playing.item
                                     )
-                                    .split("-")[-1]
+                                    .split("|")[-1]
                                     .strip()
                                 )
                                 self.send_message(
