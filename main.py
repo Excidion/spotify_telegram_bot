@@ -9,12 +9,12 @@ def main():
     config.read("config.ini")
 
     spotify_remote = SpotifyRemote(
-        config.get("SPOTIFY", "client_id"),
-        config.get("SPOTIFY", "client_secret"),
-        config.get("SPOTIFY", "username"),
+        config.get("SPOTIFY", "bbf4354ad7c24a9ea5a32797a20c79c6"),
+        config.get("SPOTIFY", "b97fb948049f4e73b23fe5e7ae0b1295"),
+        config.get("SPOTIFY", "noize"),
     )
 
-    bot = TelegramBot(config.get("TELEGRAM", "token"), spotify_remote)
+    bot = TelegramBot(config.get("TELEGRAM", 1927601127:AAHvFW1c_OMryg_Ld3scgtYEJxpz5po_rRo"), spotify_remote)
     bot.start_bot()
     try:
         while not sleep(1):
